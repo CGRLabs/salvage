@@ -1,7 +1,8 @@
 {
-  "type": "minecraft:smelting",
-  "cookingtime": 400,
-  "experience": 1.0,
-  "ingredient": "minecraft:diamond_horse_armor",
-  "result": { "id": "minecraft:diamond" }
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:diamond_horse_armor"
+  ],
+  "result": { "id": "minecraft:diamond", "count": 3 }
 }

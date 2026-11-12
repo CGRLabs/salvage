@@ -1,7 +1,0 @@
-{
-  "type": "minecraft:smelting",
-  "cookingtime": 200,
-  "experience": 0.2,
-  "ingredient": "minecraft:chainmail_chestplate",
-  "result": { "id": "minecraft:iron_nugget" }
-}

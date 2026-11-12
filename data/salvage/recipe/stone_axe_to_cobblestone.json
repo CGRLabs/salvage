@@ -3,5 +3,5 @@
   "cookingtime": 100,
   "experience": 0.1,
   "ingredient": "minecraft:stone_axe",
-  "result": { "id": "minecraft:cobblestone" }
+  "result": { "id": "minecraft:cobblestone", "count": 2 }
 }

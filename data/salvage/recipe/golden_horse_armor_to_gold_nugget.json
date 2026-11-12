@@ -1,7 +1,8 @@
 {
-  "type": "minecraft:smelting",
-  "cookingtime": 200,
-  "experience": 0.3,
-  "ingredient": "minecraft:golden_horse_armor",
-  "result": { "id": "minecraft:gold_nugget" }
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:golden_horse_armor"
+  ],
+  "result": { "id": "minecraft:gold_nugget", "count": 3 }
 }
