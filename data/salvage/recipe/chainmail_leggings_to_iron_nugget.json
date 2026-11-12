@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:smelting",
+  "cookingtime": 200,
+  "experience": 0.15,
+  "ingredient": "minecraft:chainmail_leggings",
+  "result": { "id": "minecraft:iron_nugget" }
+}

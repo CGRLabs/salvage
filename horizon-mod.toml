@@ -1,7 +1,7 @@
 id = "salvage"
 name = "Salvage"
-version = "1.0.0"
-description = "Smelt old leather gear, saddles and wooden tools back into useful materials."
+version = "1.1.0"
+description = "The all-recycling mod: smelt leather, chainmail, wood, stone, bows, fishing rods, saddles and horse armor back into useful materials."
 authors = ["CGRLabs"]
 api = "0.2"
 side = "both"

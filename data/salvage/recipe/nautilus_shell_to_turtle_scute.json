@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:smelting",
+  "cookingtime": 200,
+  "experience": 0.2,
+  "ingredient": "minecraft:nautilus_shell",
+  "result": { "id": "minecraft:turtle_scute" }
+}

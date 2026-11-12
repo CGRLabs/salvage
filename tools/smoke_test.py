@@ -20,16 +20,43 @@ RESOURCES = INSTALL / ".local" / "horizon-client" / "26.3"
 OUT = ROOT / "target" / "smoke"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# One representative per output family; the other nine share the same shape.
+# Every recipe in the mod, one entry each (v1.1.0 = 27 recipes).
+# (input, expected output, cooking ticks)
 RECIPES = [
-    ("leather_helmet", "leather"),
-    ("saddle", "leather"),
-    ("wooden_pickaxe", "charcoal"),
-    ("bow", "string"),
+    ("leather_helmet", "leather", 200),
+    ("leather_chestplate", "leather", 200),
+    ("leather_leggings", "leather", 200),
+    ("leather_boots", "leather", 200),
+    ("leather_horse_armor", "leather", 200),
+    ("saddle", "leather", 200),
+    ("wooden_sword", "charcoal", 200),
+    ("wooden_shovel", "charcoal", 200),
+    ("wooden_pickaxe", "charcoal", 200),
+    ("wooden_axe", "charcoal", 200),
+    ("wooden_hoe", "charcoal", 200),
+    ("bow", "string", 200),
+    ("fishing_rod", "string", 200),
+    ("chainmail_helmet", "iron_nugget", 200),
+    ("chainmail_chestplate", "iron_nugget", 200),
+    ("chainmail_leggings", "iron_nugget", 200),
+    ("chainmail_boots", "iron_nugget", 200),
+    ("copper_horse_armor", "copper_nugget", 200),
+    ("copper_nautilus_armor", "copper_nugget", 200),
+    ("iron_horse_armor", "iron_nugget", 200),
+    ("golden_horse_armor", "gold_nugget", 200),
+    ("diamond_horse_armor", "diamond", 400),
+    ("stone_sword", "cobblestone", 100),
+    ("stone_shovel", "cobblestone", 100),
+    ("stone_pickaxe", "cobblestone", 100),
+    ("stone_axe", "cobblestone", 100),
+    ("stone_hoe", "cobblestone", 100),
+    ("turtle_helmet", "turtle_scute", 200),
+    ("nautilus_shell", "turtle_scute", 200),
+    ("elytra", "phantom_membrane", 400),
 ]
 # No smelting recipe exists for this in vanilla or in the mod: it must NOT cook.
 CONTROL = "diamond_sword"
-COOK_TICKS = 260  # recipe cookingtime is 200
+COOK_TICKS = 260  # recipe cookingtime is 200; 400-tick recipes get their own
 
 LOG = (OUT / "run.log").open("w", encoding="utf-8")
 
@@ -133,8 +160,33 @@ def empty_player_slot():
 
 
 def move(src, dst):
+    if src is None:
+        raise RuntimeError(f"move: source slot is None (dst={dst})")
     j("click-slot", str(src))
     j("click-slot", str(dst))
+
+
+def clear_inventory():
+    """Each test leaves its output item in the player's inventory, so after a
+    few dozen the inventory is full and there is nowhere to put the next
+    output. /clear wipes it between tests."""
+    try:
+        j("command", "clear @s")
+        return True
+    except Exception as exc:
+        log(f"  ! clear failed: {exc}")
+        return False
+
+
+def wait_for_item(item, tries=30, ticks=2):
+    """The give command returns before the stack lands in the inventory.
+    Poll the slots until the item shows up (or give up)."""
+    for _ in range(tries):
+        slot = find_slot(item)
+        if slot is not None:
+            return slot
+        j("wait", str(ticks))
+    return None
 
 
 def counts():
@@ -177,18 +229,25 @@ def open_furnace(pos):
     return ok
 
 
-def test_recipe(src_item, want, pos, index):
-    log(f"\n[{index}] {src_item} -> {want or '(nothing)'}")
+def test_recipe(src_item, want, pos, index, cook_ticks=None):
+    ticks = cook_ticks or COOK_TICKS
+    wait_ticks = ticks + 60
+    log(f"\n[{index}] {src_item} -> {want or '(nothing)'} (cookingtime {ticks})")
+    # Start from an empty inventory: earlier tests' outputs would fill it.
+    clear_inventory()
     ok, _ = furnace_open()
     if not ok:
         back_to_game()
         j("interact", str(pos[0]), str(pos[1]), str(pos[2]))
-    j("give", src_item, "1")
-    # Snapshot after the give: the input must be present to measure it being consumed.
-    before = counts()
-    src = find_slot(src_item)
+    try:
+        j("give", src_item, "1")
+    except Exception as exc:
+        return {"input": src_item, "expected": want, "pass": False, "why": f"give failed: {exc}"}
+    src = wait_for_item(src_item)
     if src is None:
         return {"input": src_item, "expected": want, "pass": False, "why": "give did not land in inventory"}
+    # Snapshot after the give landed: the input must be present to measure it being consumed.
+    before = counts()
     log(f"  {src_item} in slot {src}; before counts: {want}={before.get(norm(want), 0)}")
     move(src, 300)
     loaded = slot_item(300)
@@ -197,16 +256,23 @@ def test_recipe(src_item, want, pos, index):
         return {"input": src_item, "expected": want, "pass": False, "why": f"input slot holds {loaded}"}
 
     if slot_item(301) is None:
-        j("give", "coal", "64")
-        fuel = find_slot("coal")
+        try:
+            j("give", "coal", "64")
+        except Exception as exc:
+            return {"input": src_item, "expected": want, "pass": False,
+                    "why": f"fuel give failed: {exc}"}
+        fuel = wait_for_item("coal")
+        if fuel is None:
+            return {"input": src_item, "expected": want, "pass": False,
+                    "why": "fuel (coal) did not land in inventory"}
         move(fuel, 301)
         log(f"  fuel slot 301 = {slot_item(301)}")
 
     shot = OUT / f"shot-{index}-{src_item}-cooking.png"
     soft("screenshot", lambda: j("screenshot", str(shot)))
-    j("wait", str(COOK_TICKS), timeout=120)
+    j("wait", str(wait_ticks), timeout=180)
     got = slot_item(302)
-    log(f"  after {COOK_TICKS} ticks: output slot 302 = {got}, input slot 300 = {slot_item(300)}")
+    log(f"  after {wait_ticks} ticks: output slot 302 = {got}, input slot 300 = {slot_item(300)}")
     shot2 = OUT / f"shot-{index}-{src_item}-result.png"
     soft("screenshot", lambda: j("screenshot", str(shot2)))
 
@@ -215,8 +281,14 @@ def test_recipe(src_item, want, pos, index):
     # Take the output (or the uncooked input) back out so the next test starts clean.
     take = 302 if got else 300
     landing = empty_player_slot()
+    if landing is None:
+        # The inventory filled up: wipe it and try again.
+        clear_inventory()
+        landing = empty_player_slot()
     if landing is not None:
         move(take, landing)
+    else:
+        log(f"  ! no free player slot; left {take} in the furnace")
     after = counts()
     if want:
         gained = after.get(norm(want), 0) - before.get(norm(want), 0)
@@ -233,7 +305,7 @@ def test_recipe(src_item, want, pos, index):
 
 
 def main():
-    report = {"mod": "salvage", "version": "1.0.0", "recipes": [], "mods_screen": None}
+    report = {"mod": "salvage", "version": "1.1.0", "recipes": [], "mods_screen": None}
     log("launching offscreen creative world...")
     launch = ctl(
         "launch", "--game", str(GAME), "--world", "SalvageSmoke", "--creative", "--offscreen",
@@ -265,8 +337,8 @@ def main():
             report["fatal"] = "could not open a furnace menu"
             return report
 
-        for i, (src, want) in enumerate(RECIPES, start=1):
-            report["recipes"].append(test_recipe(src, want, pos, i))
+        for i, (src, want, ticks) in enumerate(RECIPES, start=1):
+            report["recipes"].append(test_recipe(src, want, pos, i, ticks))
         report["recipes"].append(test_recipe(CONTROL, None, pos, len(RECIPES) + 1))
 
         soft("close", lambda: j("close"))

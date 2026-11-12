@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:smelting",
+  "cookingtime": 400,
+  "experience": 1.0,
+  "ingredient": "minecraft:elytra",
+  "result": { "id": "minecraft:phantom_membrane" }
+}
