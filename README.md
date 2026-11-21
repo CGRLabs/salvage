@@ -1,5 +1,7 @@
 # Salvage
 
+![Salvage icon](icon.png)
+
 A [Horizon](https://playhorizon.dev) content mod: the all-recycling mod. Smelt leather,
 wood, stone, diamond gear, saddles and horse armour back into useful materials, and unknot a
 bow or a fishing rod at the crafting table for its string.
